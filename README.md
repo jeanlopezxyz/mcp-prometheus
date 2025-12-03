@@ -282,4 +282,6 @@ export PROMETHEUS_URL="http://localhost:9090"
 
 ## License
 
-MIT
+[MIT](LICENSE) - Free to use, modify, and distribute.
+
+
