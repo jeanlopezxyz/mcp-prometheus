@@ -25,6 +25,12 @@ Built with [Quarkus MCP Server](https://docs.quarkiverse.io/quarkus-mcp-server/d
 
 ## Installation
 
+### Quick Install (Claude Code CLI)
+
+```bash
+claude mcp add prometheus -e PROMETHEUS_URL="http://localhost:9090" -- npx -y mcp-prometheus@latest
+```
+
 ### Claude Code
 
 Add to `~/.claude/settings.json`:
