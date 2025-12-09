@@ -5,19 +5,33 @@ on:
     tags:
       - 'v*'
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/mcp-prometheus
+
 permissions:
   contents: write
+  packages: write
 
 jobs:
+  # ===========================================
+  # Build JAR and create GitHub Release
+  # ===========================================
   build-and-release:
     runs-on: ubuntu-latest
-
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION"
+
+      - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -37,25 +51,58 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # ===========================================
+  # Build and Push Native Docker Image
+  # ===========================================
+  docker:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-release.outputs.version }}
+          labels: |
+            org.opencontainers.image.title=MCP Prometheus Server
+            org.opencontainers.image.description=MCP Server for Prometheus (Native)
+            org.opencontainers.image.version=${{ needs.build-and-release.outputs.version }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ===========================================
+  # Publish to npm
+  # ===========================================
   publish-npm:
     needs: build-and-release
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Update version in package.json
+      - name: Update version in package.json to match tag
         run: |
           cd npm
-          VERSION=${GITHUB_REF_NAME#v}
-          npm version $VERSION --no-git-tag-version --allow-same-version
+          npm version ${{ needs.build-and-release.outputs.version }} --no-git-tag-version --allow-same-version
+          echo "Synchronized npm package to version: ${{ needs.build-and-release.outputs.version }}"
 
       - name: Publish to npm
         run: |
