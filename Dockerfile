@@ -27,7 +27,7 @@ COPY --chown=quarkus:quarkus pom.xml .
 
 # Download dependencies (cached layer)
 USER quarkus
-RUN ./mvnw dependency:go-offline -B
+RUN ./mvnw dependency:go-offline -B && rm -rf target
 
 # Copy source code
 COPY --chown=quarkus:quarkus src src
