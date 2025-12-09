@@ -25,9 +25,9 @@ COPY --chown=quarkus:quarkus mvnw .
 COPY --chown=quarkus:quarkus .mvn .mvn
 COPY --chown=quarkus:quarkus pom.xml .
 
-# Download dependencies (cached layer)
+# Download dependencies (cached layer) and ensure clean target
 USER quarkus
-RUN ./mvnw dependency:go-offline -B && rm -rf target
+RUN ./mvnw dependency:resolve dependency:resolve-plugins -B
 
 # Copy source code
 COPY --chown=quarkus:quarkus src src
