@@ -17,22 +17,16 @@
 # Stage 1: Build Native Executable
 FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21 AS build
 
-USER root
 WORKDIR /build
 
-# Copy Maven wrapper and configuration
+# Copy all source files
 COPY --chown=quarkus:quarkus mvnw .
 COPY --chown=quarkus:quarkus .mvn .mvn
 COPY --chown=quarkus:quarkus pom.xml .
-
-# Download dependencies (cached layer) and ensure clean target
-USER quarkus
-RUN ./mvnw dependency:resolve dependency:resolve-plugins -B
-
-# Copy source code
 COPY --chown=quarkus:quarkus src src
 
-# Build native executable
+# Build native executable (single step to avoid permission issues)
+USER quarkus
 RUN ./mvnw package -DskipTests -Dnative -B
 
 # Stage 2: Runtime (Micro Image - smallest possible)
