@@ -17,16 +17,22 @@
 # Stage 1: Build Native Executable
 FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21 AS build
 
+USER root
 WORKDIR /build
 
 # Copy Maven wrapper and configuration
 COPY --chown=quarkus:quarkus mvnw .
 COPY --chown=quarkus:quarkus .mvn .mvn
 COPY --chown=quarkus:quarkus pom.xml .
+
+# Download dependencies (cached layer)
+USER quarkus
+RUN ./mvnw dependency:go-offline -B
+
+# Copy source code
 COPY --chown=quarkus:quarkus src src
 
-# Build native executable as quarkus user
-USER quarkus
+# Build native executable
 RUN ./mvnw package -DskipTests -Dnative -B
 
 # Stage 2: Runtime (Micro Image - smallest possible)
