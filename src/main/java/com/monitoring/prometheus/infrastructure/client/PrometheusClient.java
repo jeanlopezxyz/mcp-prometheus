@@ -3,10 +3,12 @@ package com.monitoring.prometheus.infrastructure.client;
 import com.monitoring.prometheus.infrastructure.dto.*;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 @Path("/api/v1")
 @RegisterRestClient(configKey = "prometheus-api")
+@RegisterClientHeaders(KubernetesBearerTokenHeaderFactory.class)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public interface PrometheusClient {
