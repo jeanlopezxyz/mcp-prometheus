@@ -1,0 +1,20 @@
+# Build artifacts
+/mcp-prometheus
+/dist/
+
+# Generated npm platform packages (created by make npm-copy-project-files)
+npm/mcp-prometheus-darwin-*/
+npm/mcp-prometheus-linux-*/
+npm/mcp-prometheus-windows-*/
+npm/mcp-prometheus/package.json
+npm/mcp-prometheus/README.md
+npm/mcp-prometheus/LICENSE
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
