@@ -62,8 +62,8 @@ func newCommand() *cobra.Command {
 	cmd.Flags().IntVar(&o.LogLevel, "log-level", 0, "Set the log level (from 0 to 9)")
 	cmd.Flags().StringVar(&o.Port, "port", "", "Start a streamable HTTP server on the specified port (e.g. 8080)")
 	cmd.Flags().StringVar(&o.URL, "url", "", "Direct Prometheus URL (e.g. http://localhost:9090). Overrides K8S auto-detect. Env: PROMETHEUS_URL")
-	cmd.Flags().StringVar(&o.Namespace, "namespace", "", "Kubernetes namespace for Prometheus service (default: monitoring)")
-	cmd.Flags().StringVar(&o.Service, "service", "", "Kubernetes service name for Prometheus (default: prometheus-k8s)")
+	cmd.Flags().StringVar(&o.Namespace, "namespace", "", "Kubernetes namespace for Prometheus service (default: openshift-monitoring)")
+	cmd.Flags().StringVar(&o.Service, "service", "", "Kubernetes service name for Prometheus (default: prometheus-operated)")
 	cmd.Flags().StringVar(&o.ServicePort, "service-port", "", "Kubernetes service port for Prometheus (default: 9090)")
 	cmd.Flags().StringVar(&o.Kubeconfig, "kubeconfig", "", "Path to kubeconfig file (default: auto-detect)")
 
@@ -159,10 +159,10 @@ func (o *options) resolveConnection() (string, *http.Client, error) {
 
 	// 2. K8S auto-detect via kubeconfig or in-cluster
 	if kubernetes.CanConnectToCluster(o.Kubeconfig) {
-		namespace := kubernetes.DetectNamespace(o.Namespace, "monitoring")
+		namespace := kubernetes.DetectNamespace(o.Namespace, "openshift-monitoring")
 		service := o.Service
 		if service == "" {
-			service = "prometheus-k8s"
+			service = "prometheus-operated"
 		}
 		port := o.ServicePort
 		if port == "" {
@@ -185,12 +185,12 @@ Configure one of the following:
   # Environment variable
   PROMETHEUS_URL=http://prometheus:9090 %[1]s
 
-  # Kubernetes auto-detect with defaults (monitoring/prometheus-k8s:9090)
+  # Kubernetes auto-detect with defaults (openshift-monitoring/prometheus-operated:9090)
   # Requires a valid kubeconfig or in-cluster service account
   %[1]s
 
   # Custom namespace/service
-  %[1]s --namespace openshift-monitoring --service prometheus-k8s
+  %[1]s --namespace openshift-monitoring --service prometheus-operated
 
   # Explicit kubeconfig
   %[1]s --kubeconfig /path/to/kubeconfig`, version.BinaryName)

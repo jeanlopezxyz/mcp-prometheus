@@ -41,18 +41,16 @@ code --add-mcp '{"name":"prometheus","command":"npx","args":["-y","mcp-prometheu
 
 ### Kubernetes Auto-Connect
 
-Connects directly to Prometheus running in Kubernetes via the K8S API service proxy. Uses native kubeconfig/in-cluster config via client-go. No `kubectl` or port-forwarding required.
+Automatically connects to Prometheus running in OpenShift/Kubernetes via the K8S API service proxy. Uses native kubeconfig/in-cluster config via client-go. No `kubectl` or port-forwarding required.
+
+Default: `openshift-monitoring/prometheus-operated:9090`
 
 ```json
 {
   "mcpServers": {
     "prometheus": {
       "command": "npx",
-      "args": ["-y", "mcp-prometheus@latest"],
-      "env": {
-        "K8S_NAMESPACE": "openshift-monitoring",
-        "K8S_SERVICE": "prometheus-k8s"
-      }
+      "args": ["-y", "mcp-prometheus@latest"]
     }
   }
 }
@@ -73,24 +71,25 @@ make build
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PROMETHEUS_URL` | Prometheus API URL | `http://localhost:9090` |
+| Variable | Description |
+|----------|-------------|
+| `PROMETHEUS_URL` | Direct Prometheus API URL (overrides K8S auto-connect) |
 
-### Kubernetes Auto-Connect Variables
+### CLI Flags
 
-| Variable | Required | Description | Default |
-|----------|----------|-------------|---------|
-| `K8S_NAMESPACE` | Yes | Kubernetes namespace of the service | - |
-| `K8S_SERVICE` | Yes | Kubernetes service name | - |
-| `K8S_SERVICE_PORT` | No | Service port | `9090` |
-| `KUBECONFIG` | No | Path to kubeconfig file | `~/.kube/config` |
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--url` | Direct Prometheus URL | - |
+| `--namespace` | Kubernetes namespace | `openshift-monitoring` |
+| `--service` | Kubernetes service name | `prometheus-operated` |
+| `--service-port` | Kubernetes service port | `9090` |
+| `--kubeconfig` | Path to kubeconfig file | auto-detect |
 
-**Precedence:** `PROMETHEUS_URL` > `K8S_NAMESPACE` + `K8S_SERVICE` > `http://localhost:9090`
+**Precedence:** `--url` / `PROMETHEUS_URL` > K8S auto-connect
 
 **Connection strategy:**
-1. In-cluster config (when running inside a pod)
-2. Kubeconfig file (`KUBECONFIG` or `~/.kube/config`)
+1. Direct URL (if `--url` or `PROMETHEUS_URL` is set)
+2. K8S API proxy (auto-detect kubeconfig or in-cluster config)
 
 ---
 
