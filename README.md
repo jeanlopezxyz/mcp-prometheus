@@ -1,12 +1,23 @@
 # Prometheus MCP Server (Go)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://img.shields.io/npm/v/mcp-prometheus)](https://www.npmjs.com/package/mcp-prometheus)
+[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)](https://go.dev/)
+[![GitHub release](https://img.shields.io/github/v/release/jeanlopezxyz/mcp-prometheus?sort=semver)](https://github.com/jeanlopezxyz/mcp-prometheus/releases/latest)
+
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for Prometheus integration. Native Go binary with built-in Kubernetes connectivity via client-go.
 
 ## Installation
 
-### Claude Code
+### npx
 
-Add to `~/.claude/settings.json`:
+```bash
+npx -y mcp-prometheus@latest
+```
+
+### MCP Client Configuration
+
+Add to your MCP client configuration (VS Code, Cursor, Windsurf, etc.):
 
 ```json
 {
@@ -22,22 +33,10 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-### Claude Desktop
+### VS Code
 
-Add to `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "prometheus": {
-      "command": "npx",
-      "args": ["-y", "mcp-prometheus@latest"],
-      "env": {
-        "PROMETHEUS_URL": "http://localhost:9090"
-      }
-    }
-  }
-}
+```shell
+code --add-mcp '{"name":"prometheus","command":"npx","args":["-y","mcp-prometheus@latest"],"env":{"PROMETHEUS_URL":"http://localhost:9090"}}'
 ```
 
 ### Kubernetes Auto-Connect
