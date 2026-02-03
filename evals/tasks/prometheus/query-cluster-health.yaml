@@ -1,0 +1,9 @@
+kind: Task
+metadata:
+  name: "query-cluster-health"
+prompt: "Get a comprehensive overview of the cluster health including node status, pod health, and resource usage"
+assertions:
+  toolsUsed:
+    - server: prometheus
+      toolPattern: "(getClusterHealthOverview|query|diagnose.*)"
+  minToolCalls: 1
