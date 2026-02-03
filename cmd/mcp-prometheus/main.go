@@ -22,14 +22,15 @@ import (
 )
 
 type options struct {
-	Version     bool
-	LogLevel    int
-	Port        string
-	URL         string
-	Namespace   string
-	Service     string
-	ServicePort string
-	Kubeconfig  string
+	Version       bool
+	LogLevel      int
+	Port          string
+	URL           string
+	Namespace     string
+	Service       string
+	ServicePort   string
+	ServiceScheme string
+	Kubeconfig    string
 }
 
 func main() {
@@ -65,6 +66,7 @@ func newCommand() *cobra.Command {
 	cmd.Flags().StringVar(&o.Namespace, "namespace", "", "Kubernetes namespace for Prometheus service (default: openshift-monitoring)")
 	cmd.Flags().StringVar(&o.Service, "service", "", "Kubernetes service name for Prometheus (default: prometheus-operated)")
 	cmd.Flags().StringVar(&o.ServicePort, "service-port", "", "Kubernetes service port for Prometheus (default: 9090)")
+	cmd.Flags().StringVar(&o.ServiceScheme, "service-scheme", "", "Kubernetes service scheme: http or https (default: https)")
 	cmd.Flags().StringVar(&o.Kubeconfig, "kubeconfig", "", "Path to kubeconfig file (default: auto-detect)")
 
 	return cmd
@@ -168,8 +170,12 @@ func (o *options) resolveConnection() (string, *http.Client, error) {
 		if port == "" {
 			port = "9090"
 		}
-		klog.V(1).Infof("Auto-detected Kubernetes cluster, connecting via API proxy: %s/%s:%s", namespace, service, port)
-		return kubernetes.NewK8SProxyClient(o.Kubeconfig, namespace, service, port)
+		scheme := o.ServiceScheme
+		if scheme == "" {
+			scheme = "https"
+		}
+		klog.V(1).Infof("Auto-detected Kubernetes cluster, connecting via API proxy: %s/%s:%s:%s", namespace, scheme, service, port)
+		return kubernetes.NewK8SProxyClient(o.Kubeconfig, namespace, service, port, scheme)
 	}
 
 	// 3. Nothing available → error with helpful examples

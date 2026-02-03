@@ -12,8 +12,9 @@ import (
 
 // NewK8SProxyClient creates an HTTP client and base URL for proxying through
 // the Kubernetes API server to a service.
-// URL pattern: {host}/api/v1/namespaces/{ns}/services/{svc}:{port}/proxy
-func NewK8SProxyClient(kubeconfig, namespace, service, port string) (string, *http.Client, error) {
+// URL pattern: {host}/api/v1/namespaces/{ns}/services/{scheme}:{svc}:{port}/proxy
+// The scheme is required for services that use TLS (e.g., OpenShift monitoring).
+func NewK8SProxyClient(kubeconfig, namespace, service, port, scheme string) (string, *http.Client, error) {
 	config, err := getRESTConfig(kubeconfig)
 	if err != nil {
 		return "", nil, fmt.Errorf("kubernetes config: %w", err)
@@ -25,8 +26,8 @@ func NewK8SProxyClient(kubeconfig, namespace, service, port string) (string, *ht
 	}
 
 	host := config.Host
-	baseURL := fmt.Sprintf("%s/api/v1/namespaces/%s/services/%s:%s/proxy",
-		host, namespace, service, port)
+	baseURL := fmt.Sprintf("%s/api/v1/namespaces/%s/services/%s:%s:%s/proxy",
+		host, namespace, scheme, service, port)
 
 	httpClient := &http.Client{Transport: transport}
 	return baseURL, httpClient, nil

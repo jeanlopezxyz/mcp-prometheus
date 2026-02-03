@@ -83,6 +83,7 @@ make build
 | `--namespace` | Kubernetes namespace | `openshift-monitoring` |
 | `--service` | Kubernetes service name | `prometheus-operated` |
 | `--service-port` | Kubernetes service port | `9090` |
+| `--service-scheme` | Service scheme (http/https) | `https` |
 | `--kubeconfig` | Path to kubeconfig file | auto-detect |
 
 **Precedence:** `--url` / `PROMETHEUS_URL` > K8S auto-connect
