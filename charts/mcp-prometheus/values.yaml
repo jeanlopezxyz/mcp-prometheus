@@ -1,0 +1,112 @@
+# -- Enable OpenShift specific features
+openshift: false
+
+# -- This will set the replicaset count
+replicaCount: 1
+
+# -- Container image configuration
+image:
+  registry: ghcr.io
+  repository: jeanlopezxyz/mcp-prometheus
+  version: latest
+  pullPolicy: IfNotPresent
+
+# -- Image pull secrets for private registries
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# -- Service account configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# -- RBAC configuration
+rbac:
+  create: true
+  # -- Use cluster-reader role for read-only access to cluster resources
+  useClusterReader: true
+  extraClusterRoleBindings: []
+
+# -- Pod annotations
+podAnnotations: {}
+# -- Pod labels
+podLabels: {}
+
+# -- Default Pod Security Context
+defaultPodSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+podSecurityContext: {}
+
+# -- Default Container Security Context
+defaultSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  runAsNonRoot: true
+
+securityContext: {}
+
+# -- Service configuration
+service:
+  type: ClusterIP
+  port: 8080
+
+# -- Ingress configuration (for Kubernetes Ingress or OpenShift Route)
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+  host: ""
+  path: /
+  pathType: ImplementationSpecific
+  termination: edge
+  tls: {}
+
+# -- Resource requests and limits
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# -- Liveness and readiness probes
+# Note: MCP servers typically don't expose health endpoints
+# Enable these if your server supports health checks
+livenessProbe: {}
+readinessProbe: {}
+
+# -- Additional volumes
+extraVolumes: []
+# -- Additional volume mounts
+extraVolumeMounts: []
+# -- Additional containers (sidecars)
+extraContainers: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# -- Prometheus connection configuration
+prometheus:
+  # -- Direct URL (overrides K8S auto-connect)
+  url: ""
+  # -- Kubernetes namespace for auto-discovery
+  namespace: "openshift-monitoring"
+  # -- Kubernetes service name for auto-discovery
+  service: "prometheus-operated"
+  # -- Kubernetes service port
+  servicePort: "9090"
+  # -- Service scheme (http/https)
+  serviceScheme: "https"
+
+# -- Server configuration
+server:
+  # -- Log level (0=debug, 1=info, 2=warn, 3=error)
+  logLevel: "2"

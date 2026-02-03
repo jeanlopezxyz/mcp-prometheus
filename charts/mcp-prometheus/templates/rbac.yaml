@@ -1,0 +1,37 @@
+{{- if .Values.rbac.create }}
+{{- if .Values.rbac.useClusterReader }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "mcp-prometheus.fullname" . }}-cluster-reader
+  labels:
+    {{- include "mcp-prometheus.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "mcp-prometheus.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+
+{{- range .Values.rbac.extraClusterRoleBindings }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "mcp-prometheus.fullname" $ }}-{{ .name }}
+  labels:
+    {{- include "mcp-prometheus.labels" $ | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: {{ .roleRef.kind | default "ClusterRole" }}
+  name: {{ .roleRef.name }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "mcp-prometheus.serviceAccountName" $ }}
+    namespace: {{ $.Release.Namespace }}
+{{- end }}
+{{- end }}

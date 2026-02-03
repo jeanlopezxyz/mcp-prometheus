@@ -1,0 +1,13 @@
+apiVersion: v2
+name: mcp-prometheus
+description: Helm Chart for the Prometheus MCP Server
+home: https://github.com/jeanlopezxyz/mcp-prometheus
+keywords:
+  - prometheus
+  - mcp
+  - monitoring
+  - metrics
+maintainers:
+  - name: Jean Lopez
+version: 0.1.0
+appVersion: "latest"
