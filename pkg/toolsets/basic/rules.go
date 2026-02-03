@@ -24,7 +24,7 @@ func registerRules(s *mcp.Server, client *prometheus.Client) {
 			Properties: map[string]*jsonschema.Schema{
 				"type": {
 					Type:        "string",
-					Description: "Filter by type: alerting, recording",
+					Description: "Filter by type: alert, record",
 				},
 			},
 		},

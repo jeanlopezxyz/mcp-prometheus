@@ -78,9 +78,17 @@ func (c *Client) GetTargets(state string) (string, error) {
 }
 
 // GetRules returns alerting and recording rules.
+// Valid ruleType values: "alert" (or "alerting"), "record" (or "recording"), or empty for all.
 func (c *Client) GetRules(ruleType string) (string, error) {
 	path := "/api/v1/rules"
 	if ruleType != "" {
+		// Normalize type values: Prometheus API uses "alert" and "record"
+		switch ruleType {
+		case "alerting":
+			ruleType = "alert"
+		case "recording":
+			ruleType = "record"
+		}
 		path += "?type=" + url.QueryEscape(ruleType)
 	}
 	body, err := c.doGet(path)
