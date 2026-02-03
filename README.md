@@ -156,6 +156,52 @@ podman build -f Containerfile -t mcp-prometheus .
 
 ---
 
+## Kubernetes / OpenShift Deployment
+
+### Container Image
+
+The container image is available on GitHub Container Registry:
+
+```
+ghcr.io/jeanlopezxyz/mcp-prometheus:latest
+```
+
+### Helm Chart
+
+Deploy using the included Helm chart:
+
+```bash
+# Add the chart repository (or use local chart)
+helm upgrade --install mcp-prometheus ./charts/mcp-prometheus \
+  --namespace mcp-servers \
+  --create-namespace \
+  --set openshift=true
+```
+
+#### Helm Values
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `image.registry` | Container registry | `ghcr.io` |
+| `image.repository` | Image repository | `jeanlopezxyz/mcp-prometheus` |
+| `image.version` | Image tag | `latest` |
+| `openshift` | Enable OpenShift Routes | `false` |
+| `service.port` | Service port | `8080` |
+| `prometheus.namespace` | Prometheus namespace | `openshift-monitoring` |
+| `prometheus.service` | Prometheus service name | `prometheus-operated` |
+| `rbac.useClusterReader` | Use cluster-reader role | `true` |
+
+#### Example with custom Prometheus
+
+```bash
+helm upgrade --install mcp-prometheus ./charts/mcp-prometheus \
+  --namespace mcp-servers \
+  --set openshift=true \
+  --set prometheus.url=http://prometheus.monitoring:9090
+```
+
+---
+
 ## License
 
 [MIT](LICENSE)
