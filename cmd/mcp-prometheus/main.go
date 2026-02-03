@@ -147,7 +147,7 @@ func (o *options) initializeLogging() {
 }
 
 // resolveConnection determines how to connect to Prometheus.
-// Priority: --url flag / PROMETHEUS_URL env → K8S auto-detect → error.
+// Priority: --url flag / PROMETHEUS_URL env → OpenShift route (if available) → K8S API proxy → error.
 func (o *options) resolveConnection() (string, *http.Client, error) {
 	// 1. Direct URL: flag takes precedence, then env var
 	url := o.URL
@@ -162,6 +162,19 @@ func (o *options) resolveConnection() (string, *http.Client, error) {
 	// 2. K8S auto-detect via kubeconfig or in-cluster
 	if kubernetes.CanConnectToCluster(o.Kubeconfig) {
 		namespace := kubernetes.DetectNamespace(o.Namespace, "openshift-monitoring")
+
+		// 2a. Try OpenShift route first (preferred for OpenShift clusters)
+		// Route name is "thanos-querier" for federated metrics or "prometheus-k8s" for direct access
+		routeURL, httpClient, err := kubernetes.NewOpenShiftRouteClient(o.Kubeconfig, namespace, "thanos-querier")
+		if err != nil {
+			klog.V(2).Infof("OpenShift route detection failed: %v", err)
+		}
+		if routeURL != "" {
+			klog.V(1).Infof("Auto-detected OpenShift cluster, using route: %s", routeURL)
+			return routeURL, httpClient, nil
+		}
+
+		// 2b. Fall back to K8S API proxy (for vanilla Kubernetes)
 		service := o.Service
 		if service == "" {
 			service = "prometheus-operated"
@@ -174,7 +187,7 @@ func (o *options) resolveConnection() (string, *http.Client, error) {
 		if scheme == "" {
 			scheme = "https"
 		}
-		klog.V(1).Infof("Auto-detected Kubernetes cluster, connecting via API proxy: %s/%s:%s:%s", namespace, scheme, service, port)
+		klog.V(1).Infof("Using Kubernetes API proxy: %s/%s:%s:%s", namespace, scheme, service, port)
 		return kubernetes.NewK8SProxyClient(o.Kubeconfig, namespace, service, port, scheme)
 	}
 
