@@ -147,7 +147,7 @@ func (o *options) initializeLogging() {
 }
 
 // resolveConnection determines how to connect to Prometheus.
-// Priority: --url flag / PROMETHEUS_URL env → OpenShift route (if available) → K8S API proxy → error.
+// Priority: --url flag / PROMETHEUS_URL env → OpenShift (in-cluster: internal service, local: route) → K8S API proxy → error.
 func (o *options) resolveConnection() (string, *http.Client, error) {
 	// 1. Direct URL: flag takes precedence, then env var
 	url := o.URL
@@ -163,18 +163,33 @@ func (o *options) resolveConnection() (string, *http.Client, error) {
 	if kubernetes.CanConnectToCluster(o.Kubeconfig) {
 		namespace := kubernetes.DetectNamespace(o.Namespace, "openshift-monitoring")
 
-		// 2a. Try OpenShift route first (preferred for OpenShift clusters)
-		// Route name is "thanos-querier" for federated metrics or "prometheus-k8s" for direct access
-		routeURL, httpClient, err := kubernetes.NewOpenShiftRouteClient(o.Kubeconfig, namespace, "thanos-querier")
-		if err != nil {
-			klog.V(2).Infof("OpenShift route detection failed: %v", err)
-		}
-		if routeURL != "" {
-			klog.V(1).Infof("Auto-detected OpenShift cluster, using route: %s", routeURL)
-			return routeURL, httpClient, nil
+		if kubernetes.IsOpenShift(o.Kubeconfig) {
+			if kubernetes.IsInCluster() {
+				// 2a. In-cluster: connect directly to internal service with SA bearer token
+				// Uses thanos-querier:9091 which accepts SA tokens via kube-rbac-proxy
+				// Requires cluster-monitoring-view ClusterRole
+				serviceURL, httpClient, err := kubernetes.NewOpenShiftServiceClient(o.Kubeconfig, namespace, "thanos-querier", "9091")
+				if err != nil {
+					klog.V(2).Infof("OpenShift internal service connection failed: %v", err)
+				}
+				if serviceURL != "" {
+					klog.V(1).Infof("Using OpenShift internal service: %s", serviceURL)
+					return serviceURL, httpClient, nil
+				}
+			} else {
+				// 2b. Local/external: connect via OpenShift route with kubeconfig bearer token
+				routeURL, httpClient, err := kubernetes.NewOpenShiftRouteClient(o.Kubeconfig, namespace, "thanos-querier")
+				if err != nil {
+					klog.V(2).Infof("OpenShift route connection failed: %v", err)
+				}
+				if routeURL != "" {
+					klog.V(1).Infof("Using OpenShift route: %s", routeURL)
+					return routeURL, httpClient, nil
+				}
+			}
 		}
 
-		// 2b. Fall back to K8S API proxy (for vanilla Kubernetes)
+		// 2c. Fall back to K8S API proxy (for vanilla Kubernetes)
 		service := o.Service
 		if service == "" {
 			service = "prometheus-operated"

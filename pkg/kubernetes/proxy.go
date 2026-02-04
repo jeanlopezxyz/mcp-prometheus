@@ -63,6 +63,13 @@ func CanConnectToCluster(kubeconfig string) bool {
 	return err == nil
 }
 
+// IsInCluster returns true if running inside a Kubernetes pod
+// (service account token and API server are available).
+func IsInCluster() bool {
+	_, err := rest.InClusterConfig()
+	return err == nil
+}
+
 // getRESTConfig attempts to load Kubernetes config.
 // Strategy: explicit kubeconfig path → in-cluster config → default kubeconfig rules.
 func getRESTConfig(kubeconfig string) (*rest.Config, error) {
@@ -98,8 +105,46 @@ func (t *bearerTokenTransport) RoundTrip(req *http.Request) (*http.Response, err
 	return t.base.RoundTrip(req2)
 }
 
+// NewOpenShiftServiceClient creates an HTTP client that connects directly to an
+// internal OpenShift service using the service account bearer token.
+// This is the preferred method for in-cluster access to OpenShift monitoring services
+// (e.g., thanos-querier:9091, alertmanager-main:9094) which use kube-rbac-proxy.
+func NewOpenShiftServiceClient(kubeconfig, namespace, service, port string) (string, *http.Client, error) {
+	config, err := getRESTConfig(kubeconfig)
+	if err != nil {
+		return "", nil, fmt.Errorf("kubernetes config: %w", err)
+	}
+
+	// Get bearer token from config (service account token when running in-cluster)
+	token := config.BearerToken
+	if token == "" && config.BearerTokenFile != "" {
+		data, err := os.ReadFile(config.BearerTokenFile)
+		if err != nil {
+			return "", nil, fmt.Errorf("reading bearer token file: %w", err)
+		}
+		token = strings.TrimSpace(string(data))
+	}
+	if token == "" {
+		return "", nil, nil
+	}
+
+	serviceURL := fmt.Sprintf("https://%s.%s.svc:%s", service, namespace, port)
+
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	httpClient := &http.Client{
+		Transport: &bearerTokenTransport{
+			token: token,
+			base:  transport,
+		},
+	}
+
+	return serviceURL, httpClient, nil
+}
+
 // NewOpenShiftRouteClient creates an HTTP client and base URL using an OpenShift route.
-// This is the preferred method for OpenShift clusters as routes provide authenticated access.
+// This method connects through external routes with bearer token authentication.
 // Returns: routeURL, httpClient, error (nil error with empty URL if no route found)
 func NewOpenShiftRouteClient(kubeconfig, namespace, routeName string) (string, *http.Client, error) {
 	config, err := getRESTConfig(kubeconfig)

@@ -34,4 +34,23 @@ subjects:
     name: {{ include "mcp-prometheus.serviceAccountName" $ }}
     namespace: {{ $.Release.Namespace }}
 {{- end }}
+
+{{- range .Values.rbac.extraRoleBindings }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "mcp-prometheus.fullname" $ }}-{{ .name }}
+  namespace: {{ .namespace }}
+  labels:
+    {{- include "mcp-prometheus.labels" $ | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: {{ .roleRef.kind | default "Role" }}
+  name: {{ .roleRef.name }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "mcp-prometheus.serviceAccountName" $ }}
+    namespace: {{ $.Release.Namespace }}
+{{- end }}
 {{- end }}
